@@ -405,7 +405,6 @@ class ADBDeviceInfo:
     def get_thermal_info(self):
         try:
             out = self.run_adb_command(["shell", "dumpsys", "thermalservice"])
-            print(out)
             info = {"status": None, "temps": [], "cooling": []}
 
             # Parse thermal status
