@@ -240,27 +240,32 @@ class ADBDeviceInfo:
         return memory_data
     
     def get_storage_info(self) -> Dict[str, Any]:
-        """Get storage information"""
-        # Get disk usage info
+        """Get storage information from df -h"""
         df_output = self.run_adb_command(["shell", "df", "-h"])
         
         storage_data = {
             'partitions': []
         }
         
-        for line in df_output.split('\n')[1:]:  # Skip header
+        for line in df_output.splitlines()[1:]:  # skip header line
             if line.strip():
                 parts = line.split()
                 if len(parts) >= 6:
-                    partition = {
-                        'filesystem': parts[0],
-                        'size': parts[1],
-                        'used': parts[2],
-                        'available': parts[3],
-                        'use_percentage': parts[4],
-                        'mounted_on': parts[5]
-                    }
-                    storage_data['partitions'].append(partition)
+                    filesystem = parts[0]
+                    size = parts[1]
+                    used = parts[2]
+                    available = parts[3]
+                    use_percentage = parts[4]
+                    mounted_on = " ".join(parts[5:])  # join in case path has spaces
+
+                    storage_data['partitions'].append({
+                        'filesystem': filesystem,
+                        'size': size,
+                        'used': used,
+                        'available': available,
+                        'use_percentage': use_percentage,
+                        'mounted_on': mounted_on
+                    })
         
         return storage_data
     
@@ -512,12 +517,13 @@ class ADBDeviceInfo:
         for key, value in memory.items():
             print(f"   • {key.replace('_', ' ').title()}: {value}")
         
-        # Storage Info
+        print("\n💿 Storage Information:")
         storage = info['storage_info']
-        print(f"\n💿 Storage Information:")
-        for partition in storage['partitions'][:5]:  # Show first 5 partitions
-            if '/data' in partition['mounted_on'] or '/system' in partition['mounted_on']:
-                print(f"   • {partition['mounted_on']}: {partition['used']}/{partition['size']} ({partition['use_percentage']})")
+        for partition in storage['partitions']:
+            mount = partition['mounted_on']
+            if mount.startswith("/data") or mount.startswith("/storage") or mount.startswith("/cust"):
+                print(f"   • {mount}: {partition['used']}/{partition['size']} ({partition['use_percentage']})")
+
         
         # Battery Info
         battery = info['battery_info']
